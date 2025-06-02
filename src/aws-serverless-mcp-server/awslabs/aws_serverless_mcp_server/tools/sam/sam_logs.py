@@ -14,6 +14,7 @@
 """SAM logs tool for AWS Serverless MCP Server."""
 
 from awslabs.aws_serverless_mcp_server.utils.process import run_command
+from awslabs.aws_serverless_mcp_server.utils.security import ResponseSanitizer
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
@@ -128,11 +129,13 @@ class SamLogsTool:
             stdout, stderr = await run_command(cmd)
             message = 'Successfully fetched logs'
 
-            return {
+            result = {
                 'success': True,
                 'message': message,
                 'output': stdout.decode(),
             }
+            # Apply sanitization to prevent leaking sensitive data
+            return ResponseSanitizer.sanitize(result)
         except Exception as e:
             error_message = getattr(e, 'stderr', str(e))
             logger.error(f'Error fetching logs for resource: {error_message}')

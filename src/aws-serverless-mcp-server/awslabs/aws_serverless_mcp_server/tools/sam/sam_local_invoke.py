@@ -17,6 +17,7 @@ import json
 import os
 import tempfile
 from awslabs.aws_serverless_mcp_server.utils.process import run_command
+from awslabs.aws_serverless_mcp_server.utils.security import ResponseSanitizer
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
@@ -163,12 +164,14 @@ class SamLocalInvokeTool:
                     # If not valid JSON, keep as string
                     pass
 
-                return {
+                result = {
                     'success': True,
                     'message': f"Successfully invoked resource '{resource_name}' locally.",
                     'logs': stderr.decode(),
                     'function_output': function_output,
                 }
+                # Apply sanitization to prevent leaking sensitive data
+                return ResponseSanitizer.sanitize(result)
             finally:
                 # Clean up temporary event file if created
                 if temp_event_file and os.path.exists(temp_event_file):
