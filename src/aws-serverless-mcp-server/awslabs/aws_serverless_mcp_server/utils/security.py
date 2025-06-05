@@ -14,7 +14,7 @@
 """Security utilities for the AWS Serverless MCP Server."""
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 class ResponseSanitizer:
@@ -22,18 +22,17 @@ class ResponseSanitizer:
 
     # Patterns for sensitive data commonly found in serverless environments
     PATTERNS = {
-        "aws_access_key": r"\b[A-Z0-9]{20}\b",
-        "aws_secret_key": r"\b[A-Za-z0-9/+=]{40}\b",
-        "password": r"(?i)password\s*[=:]\s*[^\s]+",
-        "private_key": r"-----BEGIN (?:RSA|DSA|EC|OPENSSH) PRIVATE KEY-----",
-        "aws_account_id": r"\b\d{12}\b",
-        "api_key": r"(?i)(api[_-]?key|x-api-key)\s*[:=]\s*[a-zA-Z0-9_-]+",
+        'aws_access_key': r'\b[A-Z0-9]{20}\b',
+        'aws_secret_key': r'\b[A-Za-z0-9/+=]{40}\b',
+        'password': r'(?i)password\s*[=:]\s*[^\s]+',
+        'private_key': r'-----BEGIN (?:RSA|DSA|EC|OPENSSH) PRIVATE KEY-----',
+        'aws_account_id': r'\b\d{12}\b',
+        'api_key': r'(?i)(api[_-]?key|x-api-key)\s*[:=]\s*[a-zA-Z0-9_-]+',
     }
 
     @classmethod
     def sanitize(cls, response: Any) -> Any:
-        """
-        Sanitizes a response to remove sensitive information.
+        """Sanitizes a response to remove sensitive information.
 
         Args:
             response: The response to sanitize
@@ -52,8 +51,7 @@ class ResponseSanitizer:
 
     @classmethod
     def _sanitize_dict(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Sanitizes a dictionary recursively.
+        """Sanitizes a dictionary recursively.
 
         Args:
             data: The dictionary to sanitize
@@ -68,8 +66,7 @@ class ResponseSanitizer:
 
     @classmethod
     def _sanitize_string(cls, text: str) -> str:
-        """
-        Sanitizes a string to remove sensitive information.
+        """Sanitizes a string to remove sensitive information.
 
         Args:
             text: The string to sanitize
@@ -78,5 +75,5 @@ class ResponseSanitizer:
             str: The sanitized string
         """
         for pattern_name, pattern in cls.PATTERNS.items():
-            text = re.sub(pattern, f"[REDACTED {pattern_name.upper()}]", text)
+            text = re.sub(pattern, f'[REDACTED {pattern_name.upper()}]', text)
         return text
