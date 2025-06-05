@@ -91,36 +91,36 @@ class SamLogsTool:
             # Build the command arguments
             cmd = ['sam', 'logs']
 
-            if resource_name:
+            if resource_name and isinstance(resource_name, str):
                 cmd.extend(['--name', resource_name])
 
-            if config_env:
+            if config_env and isinstance(config_env, str):
                 cmd.extend(['--config-env', config_env])
 
-            if config_file:
+            if config_file and isinstance(config_file, str):
                 cmd.extend(['--config-file', config_file])
 
-            if cw_log_group:
+            if cw_log_group and isinstance(cw_log_group, list):
                 cmd.extend(['--cw-log-group'])
                 for group in cw_log_group:
                     cmd.append(group)
 
-            if start_time:
+            if start_time and isinstance(start_time, str):
                 cmd.extend(['--start-time', start_time])
 
-            if end_time:
+            if end_time and isinstance(end_time, str):
                 cmd.extend(['--end-time', end_time])
 
-            if save_params:
+            if save_params and isinstance(save_params, bool) and save_params:
                 cmd.extend(['--save-params'])
 
-            if stack_name:
+            if stack_name and isinstance(stack_name, str):
                 cmd.extend(['--stack-name', stack_name])
 
-            if profile:
+            if profile and isinstance(profile, str):
                 cmd.extend(['--profile', profile])
 
-            if region:
+            if region and isinstance(region, str):
                 cmd.extend(['--region', region])
 
             # Execute the command
