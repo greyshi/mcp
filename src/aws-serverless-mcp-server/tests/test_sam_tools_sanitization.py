@@ -14,10 +14,11 @@
 """Tests for SAM tools sanitization."""
 
 import unittest
-from awslabs.aws_serverless_mcp_server.tools.sam.sam_local_invoke import SamLocalInvokeTool
-from awslabs.aws_serverless_mcp_server.tools.sam.sam_logs import SamLogsTool
-from mcp.server.fastmcp import Context, FastMCP
 from unittest.mock import AsyncMock, MagicMock, patch
+
+from awslabs.aws_serverless_mcp_server.tools.sam.sam_logs import SamLogsTool
+from awslabs.aws_serverless_mcp_server.tools.sam.sam_local_invoke import SamLocalInvokeTool
+from mcp.server.fastmcp import FastMCP, Context
 
 
 class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
@@ -46,7 +47,7 @@ class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
 2024-01-15T10:30:04.000Z END RequestId: 550e8400-e29b-41d4-a716-446655440000
 2024-01-15T10:30:04.000Z REPORT RequestId: 550e8400-e29b-41d4-a716-446655440000 Duration: 4000.00 ms Billed Duration: 4000 ms Memory Size: 128 MB Max Memory Used: 75 MB
 """
-        mock_stderr = b''
+        mock_stderr = b""
         mock_run_command.return_value = (mock_stdout, mock_stderr)
 
         # Create tool instance with sensitive data access allowed
@@ -54,7 +55,9 @@ class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
 
         # Execute the tool
         result = await tool.handle_sam_logs(
-            self.ctx, resource_name='MyFunction', stack_name='my-stack'
+            self.ctx,
+            resource_name="MyFunction",
+            stack_name="my-stack"
         )
 
         # Verify the command was called
@@ -62,25 +65,25 @@ class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
 
         # Check that sensitive data is sanitized
         output = result['output']
-        self.assertNotIn('AKIAIOSFODNN7EXAMPLE', output)
-        self.assertNotIn('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', output)
-        self.assertNotIn('123456789012', output)
-        self.assertNotIn('supersecretdbpass', output)
-        self.assertNotIn('sk-proj-1234567890abcdef', output)
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", output)
+        self.assertNotIn("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", output)
+        self.assertNotIn("123456789012", output)
+        self.assertNotIn("supersecretdbpass", output)
+        self.assertNotIn("sk-proj-1234567890abcdef", output)
 
         # Check that redacted markers are present
-        self.assertIn('[REDACTED AWS_ACCESS_KEY]', output)
-        self.assertIn('[REDACTED AWS_SECRET_KEY]', output)
-        self.assertIn('[REDACTED AWS_ACCOUNT_ID]', output)
-        self.assertIn('[REDACTED PASSWORD]', output)
-        self.assertIn('[REDACTED API_KEY]', output)
+        self.assertIn("[REDACTED AWS_ACCESS_KEY]", output)
+        self.assertIn("[REDACTED AWS_SECRET_KEY]", output)
+        self.assertIn("[REDACTED AWS_ACCOUNT_ID]", output)
+        self.assertIn("[REDACTED PASSWORD]", output)
+        self.assertIn("[REDACTED API_KEY]", output)
 
         # Check that non-sensitive data is preserved
-        self.assertIn('START RequestId', output)
-        self.assertIn('END RequestId', output)
-        self.assertIn('REPORT RequestId', output)
-        self.assertIn('Processing complete', output)
-        self.assertIn('Loading configuration', output)
+        self.assertIn("START RequestId", output)
+        self.assertIn("END RequestId", output)
+        self.assertIn("REPORT RequestId", output)
+        self.assertIn("Processing complete", output)
+        self.assertIn("Loading configuration", output)
 
     @patch('awslabs.aws_serverless_mcp_server.tools.sam.sam_logs.run_command')
     async def test_sam_logs_access_denied(self, mock_run_command):
@@ -90,7 +93,9 @@ class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
 
         # Execute the tool
         result = await tool.handle_sam_logs(
-            self.ctx, resource_name='MyFunction', stack_name='my-stack'
+            self.ctx,
+            resource_name="MyFunction",
+            stack_name="my-stack"
         )
 
         # Verify the command was not called
@@ -98,7 +103,7 @@ class TestSamToolsSanitization(unittest.IsolatedAsyncioTestCase):
 
         # Check that error is returned
         self.assertFalse(result['success'])
-        self.assertIn('Sensitive data access is not allowed', result['error'])
+        self.assertIn("Sensitive data access is not allowed", result['error'])
 
     @patch('awslabs.aws_serverless_mcp_server.tools.sam.sam_local_invoke.run_command')
     async def test_sam_local_invoke_sanitization(self, mock_run_command):
@@ -120,7 +125,9 @@ REPORT RequestId: 550e8400-e29b-41d4-a716-446655440000 Duration: 100.00 ms Bille
 
         # Execute the tool
         result = await tool.handle_sam_local_invoke(
-            self.ctx, project_directory='/path/to/project', resource_name='MyFunction'
+            self.ctx,
+            project_directory="/path/to/project",
+            resource_name="MyFunction"
         )
 
         # Verify the command was called
@@ -128,26 +135,26 @@ REPORT RequestId: 550e8400-e29b-41d4-a716-446655440000 Duration: 100.00 ms Bille
 
         # Check that sensitive data in function output is sanitized
         function_output = str(result['function_output'])
-        self.assertNotIn('123456789012', function_output)
-        self.assertNotIn('AKIAIOSFODNN7EXAMPLE', function_output)
-        self.assertIn('[REDACTED AWS_ACCOUNT_ID]', function_output)
-        self.assertIn('[REDACTED AWS_ACCESS_KEY]', function_output)
+        self.assertNotIn("123456789012", function_output)
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", function_output)
+        self.assertIn("[REDACTED AWS_ACCOUNT_ID]", function_output)
+        self.assertIn("[REDACTED AWS_ACCESS_KEY]", function_output)
 
         # Check that sensitive data in logs is sanitized
         logs = result['logs']
-        self.assertNotIn('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', logs)
-        self.assertNotIn('mydbpassword', logs)
-        self.assertNotIn('sk-1234567890', logs)
-        self.assertIn('[REDACTED AWS_SECRET_KEY]', logs)
-        self.assertIn('[REDACTED PASSWORD]', logs)
-        self.assertIn('[REDACTED API_KEY]', logs)
+        self.assertNotIn("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", logs)
+        self.assertNotIn("mydbpassword", logs)
+        self.assertNotIn("sk-1234567890", logs)
+        self.assertIn("[REDACTED AWS_SECRET_KEY]", logs)
+        self.assertIn("[REDACTED PASSWORD]", logs)
+        self.assertIn("[REDACTED API_KEY]", logs)
 
         # Check that non-sensitive data is preserved
-        self.assertIn('START RequestId', logs)
-        self.assertIn('END RequestId', logs)
-        self.assertIn('REPORT RequestId', logs)
+        self.assertIn("START RequestId", logs)
+        self.assertIn("END RequestId", logs)
+        self.assertIn("REPORT RequestId", logs)
         self.assertEqual(result['success'], True)
-        self.assertIn('Successfully invoked', result['message'])
+        self.assertIn("Successfully invoked", result['message'])
 
     @patch('awslabs.aws_serverless_mcp_server.tools.sam.sam_local_invoke.run_command')
     async def test_sam_local_invoke_with_event_data_sanitization(self, mock_run_command):
@@ -167,43 +174,43 @@ END RequestId: 550e8400-e29b-41d4-a716-446655440000
         # Execute the tool with event data
         result = await tool.handle_sam_local_invoke(
             self.ctx,
-            project_directory='/path/to/project',
-            resource_name='MyFunction',
-            event_data='{"key": "value"}',
+            project_directory="/path/to/project",
+            resource_name="MyFunction",
+            event_data='{"key": "value"}'
         )
 
         # Check that sensitive data is sanitized
         function_output = str(result['function_output'])
         logs = result['logs']
 
-        self.assertNotIn('123456789012', function_output)
-        self.assertNotIn('secret123', logs)
-        self.assertIn('[REDACTED AWS_ACCOUNT_ID]', function_output)
-        self.assertIn('[REDACTED API_KEY]', logs)
+        self.assertNotIn("123456789012", function_output)
+        self.assertNotIn("secret123", logs)
+        self.assertIn("[REDACTED AWS_ACCOUNT_ID]", function_output)
+        self.assertIn("[REDACTED API_KEY]", logs)
 
     @patch('awslabs.aws_serverless_mcp_server.tools.sam.sam_local_invoke.run_command')
     async def test_sam_local_invoke_error_handling(self, mock_run_command):
         """Test that sam_local_invoke handles errors properly without leaking sensitive data."""
         # Mock an error that contains sensitive data
-        mock_run_command.side_effect = Exception(
-            'Failed to invoke: Invalid AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE'
-        )
+        mock_run_command.side_effect = Exception("Failed to invoke: Invalid AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE")
 
         # Create tool instance
         tool = SamLocalInvokeTool(self.mcp)
 
         # Execute the tool
         result = await tool.handle_sam_local_invoke(
-            self.ctx, project_directory='/path/to/project', resource_name='MyFunction'
+            self.ctx,
+            project_directory="/path/to/project",
+            resource_name="MyFunction"
         )
 
         # Check that error is returned
         self.assertFalse(result['success'])
-        self.assertIn('Failed to invoke resource locally', result['message'])
+        self.assertIn("Failed to invoke resource locally", result['message'])
 
         # Check that sensitive data is NOT sanitized in error messages
         # (since we're not sanitizing error responses)
-        self.assertIn('AKIAIOSFODNN7EXAMPLE', result['error'])
+        self.assertIn("AKIAIOSFODNN7EXAMPLE", result['error'])
 
     @patch('awslabs.aws_serverless_mcp_server.tools.sam.sam_logs.run_command')
     async def test_sam_logs_with_multiple_sensitive_patterns(self, mock_run_command):
@@ -221,7 +228,7 @@ END RequestId: 550e8400-e29b-41d4-a716-446655440000
 2024-01-15T10:30:03.000Z [INFO] Request processed successfully
 2024-01-15T10:30:03.000Z [INFO] Cleaning up resources
 """
-        mock_stderr = b''
+        mock_stderr = b""
         mock_run_command.return_value = (mock_stdout, mock_stderr)
 
         # Create tool instance
@@ -229,34 +236,34 @@ END RequestId: 550e8400-e29b-41d4-a716-446655440000
 
         # Execute the tool
         result = await tool.handle_sam_logs(
-            self.ctx, resource_name='MyFunction', stack_name='my-stack'
+            self.ctx,
+            resource_name="MyFunction",
+            stack_name="my-stack"
         )
 
         # Check that all sensitive patterns are sanitized
         output = result['output']
 
         # AWS credentials
-        self.assertNotIn('AKIAIOSFODNN7EXAMPLE', output)
-        self.assertNotIn('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', output)
+        self.assertNotIn("AKIAIOSFODNN7EXAMPLE", output)
+        self.assertNotIn("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", output)
 
         # Passwords
-        self.assertNotIn('mysupersecretpassword', output)
+        self.assertNotIn("mysupersecretpassword", output)
 
         # API keys
-        self.assertNotIn('sk-proj-abcdef1234567890', output)
+        self.assertNotIn("sk-proj-abcdef1234567890", output)
 
         # Account IDs
-        self.assertNotIn('123456789012', output)
-        self.assertNotIn('987654321098', output)
+        self.assertNotIn("123456789012", output)
+        self.assertNotIn("987654321098", output)
 
         # Check redacted markers
-        self.assertIn('[REDACTED AWS_ACCESS_KEY]', output)
-        self.assertIn('[REDACTED AWS_SECRET_KEY]', output)
-        self.assertIn('[REDACTED PASSWORD]', output)
-        self.assertIn('[REDACTED API_KEY]', output)
-        self.assertEqual(
-            output.count('[REDACTED AWS_ACCOUNT_ID]'), 2
-        )  # Should redact both account IDs
+        self.assertIn("[REDACTED AWS_ACCESS_KEY]", output)
+        self.assertIn("[REDACTED AWS_SECRET_KEY]", output)
+        self.assertIn("[REDACTED PASSWORD]", output)
+        self.assertIn("[REDACTED API_KEY]", output)
+        self.assertEqual(output.count("[REDACTED AWS_ACCOUNT_ID]"), 2)  # Should redact both account IDs
 
 
 if __name__ == '__main__':
