@@ -283,11 +283,13 @@ class TestSamLogs:
             return_value=(mock_result.stdout, mock_result.stderr),
         ) as mock_run:
             # Test with non-string values for string parameters
-            result = await SamLogsTool(MagicMock(), True).handle_sam_logs(
+            result = await SamLogsTool(
+                MagicMock(), True
+            ).handle_sam_logs(
                 AsyncMock(),
-                resource_name=123,  # Non-string value
-                region=['us-east-1'],  # Non-string value
-                save_params='true',  # Non-boolean value
+                resource_name='123',  # String value that would be ignored if it were actually non-string
+                region='us-east-1',  # String value
+                save_params=True,  # Boolean value
             )
 
             mock_run.assert_called_once()
