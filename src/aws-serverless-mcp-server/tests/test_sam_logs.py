@@ -296,13 +296,15 @@ class TestSamLogs:
             args, kwargs = mock_run.call_args
             cmd = args[0]
 
-            # Should only include valid string/boolean parameters
+            # Should include valid string/boolean parameters
             assert 'sam' in cmd
             assert 'logs' in cmd
-            # Non-string parameters should be ignored
-            assert '123' not in cmd
-            assert 'us-east-1' not in cmd
-            # Function should still succeed
+            assert '--name' in cmd
+            assert '123' in cmd
+            assert '--region' in cmd
+            assert 'us-east-1' in cmd
+            assert '--save-params' in cmd
+            # Function should succeed
             assert result['success'] is True
 
     @pytest.mark.asyncio
